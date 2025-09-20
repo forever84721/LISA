@@ -121,7 +121,9 @@ def main(args):
 
     model.get_model().initialize_vision_modules(model.get_model().config)
     vision_tower = model.get_model().get_vision_tower()
-    vision_tower.to(dtype=torch_dtype)
+    # Avoid calling .to() on 4-bit/8-bit models (bitsandbytes/deepspeed manages device & dtype)
+    if not (args.load_in_4bit or args.load_in_8bit):
+        vision_tower.to(dtype=torch_dtype)
 
     if args.precision == "bf16":
         model = model.bfloat16().cuda()
@@ -144,7 +146,9 @@ def main(args):
         model = model.float().cuda()
 
     vision_tower = model.get_model().get_vision_tower()
-    vision_tower.to(device=args.local_rank)
+    # Avoid .to(device=...) for 4/8-bit models
+    if not (args.load_in_4bit or args.load_in_8bit):
+        vision_tower.to(device=args.local_rank)
 
     clip_image_processor = CLIPImageProcessor.from_pretrained(model.config.vision_tower)
     transform = ResizeLongestSide(args.image_size)
