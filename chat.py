@@ -100,8 +100,6 @@ def main(args):
                 ),
             }
         )
-        # let accelerate / bitsandbytes manage device placement for 4-bit models
-        kwargs["device_map"] = "auto"
     elif args.load_in_8bit:
         kwargs.update(
             {
@@ -112,8 +110,6 @@ def main(args):
                 ),
             }
         )
-        # let accelerate / bitsandbytes manage device placement for 8-bit models
-        kwargs["device_map"] = "auto"
 
     model = LISAForCausalLM.from_pretrained(
         args.version, low_cpu_mem_usage=True, vision_tower=args.vision_tower, seg_token_idx=args.seg_token_idx, **kwargs
