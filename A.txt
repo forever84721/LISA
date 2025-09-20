@@ -1,0 +1,31 @@
+python -m venv .venv
+.venv\Scripts\activate
+
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+
+
+python chat.py --version "models/LISA-13B-llama2-v1" --precision fp16 --load_in_4bit
+
+python chat.py --version "models/LISA-13B-llama2-v1" --precision fp16
+==============================================================
+sudo apt install python3.10-venv
+# 建立虛擬環境
+python3 -m venv .venv
+
+# 啟動虛擬環境
+source .venv/bin/activate
+
+sudo apt-get install -y python3.10-venv python3-dev python3.10-dev build-essential git
+
+
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+
+CUDA_VISIBLE_DEVICES=0 python chat.py --version='models/LISA-13B-llama2-v1'
+CUDA_VISIBLE_DEVICES=0 python chat.py --version='models/LISA-13B-llama2-v1' --precision='fp16' --load_in_8bit
+
+CUDA_VISIBLE_DEVICES=0 python chat.py \
+    --version='models/LISA-13B-llama2-v1' \
+    --precision='fp16' \
+    --load_in_4bit
