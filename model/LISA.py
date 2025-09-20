@@ -425,3 +425,15 @@ class LISAForCausalLM(LlavaLlamaForCausalLM):
                 pred_masks.append(pred_mask[:, 0])
 
         return output_ids, pred_masks
+
+    def _has_quantized_weights(self):
+        for m in self.modules():
+            if getattr(m, "is_loaded_in_4bit", False) or getattr(m, "is_loaded_in_8bit", False):
+                return True
+        return False
+
+    def to(self, *args, **kwargs):
+        # 避免在 4-bit / 8-bit 量化模型上呼叫 .to()
+        if self._has_quantized_weights():
+            return self
+        return super().to(*args, **kwargs)
