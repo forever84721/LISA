@@ -102,6 +102,8 @@ if args.load_in_4bit:
             ),
         }
     )
+    # when using bitsandbytes/accelerate, prefer device_map="auto"
+    kwargs["device_map"] = "auto"
 elif args.load_in_8bit:
     kwargs.update(
         {
@@ -112,7 +114,7 @@ elif args.load_in_8bit:
             ),
         }
     )
-
+    kwargs["device_map"] = "auto"
 model = LISAForCausalLM.from_pretrained(
     args.version, low_cpu_mem_usage=True, vision_tower=args.vision_tower, seg_token_idx=args.seg_token_idx, **kwargs
 )
@@ -123,9 +125,12 @@ model.config.pad_token_id = tokenizer.pad_token_id
 
 model.get_model().initialize_vision_modules(model.get_model().config)
 vision_tower = model.get_model().get_vision_tower()
-vision_tower.to(dtype=torch_dtype)
+# Avoid calling .to() on 4-bit/8-bit models (bitsandbytes/accelerate manages device & dtype)
+if not (args.load_in_4bit or args.load_in_8bit):
+    vision_tower.to(dtype=torch_dtype)
 
-if args.precision == "bf16":
+# When using 4/8-bit loading, do not cast or move the model here — the loader already handled it.
+if args.precision == "bf16" and not (args.load_in_4bit or args.load_in_8bit):
     model = model.bfloat16().cuda()
 elif (
     args.precision == "fp16" and (not args.load_in_4bit) and (not args.load_in_8bit)
@@ -142,11 +147,13 @@ elif (
     )
     model = model_engine.module
     model.model.vision_tower = vision_tower.half().cuda()
-elif args.precision == "fp32":
+elif args.precision == "fp32" and not (args.load_in_4bit or args.load_in_8bit):
     model = model.float().cuda()
 
 vision_tower = model.get_model().get_vision_tower()
-vision_tower.to(device=args.local_rank)
+# Avoid .to(device=...) for 4/8-bit models
+if not (args.load_in_4bit or args.load_in_8bit):
+    vision_tower.to(device=args.local_rank)
 
 clip_image_processor = CLIPImageProcessor.from_pretrained(model.config.vision_tower)
 transform = ResizeLongestSide(args.image_size)
